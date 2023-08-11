@@ -6,16 +6,18 @@ pub struct FER_calculator {
     //this is just the expectation of the tenancy distribution
     pcs: u64,
     vcs_dist: HashMap<u64, f64>,
+    efficiency: f64,
 }
 
 impl FER_calculator {
-    pub fn new(td: Vec<(u64, f64)>) -> FER_calculator {
+    pub fn new(td: Vec<(u64, f64)>, efficiency: f64) -> FER_calculator {
         let pcs = tenancy_expectation(&td);
         let vcs_dist = vcsd::generate_vcsd(td.iter().map(|(tenacy, prob)| (*tenacy, *prob)).collect::<HashMap<_, _>>());
         FER_calculator {
             td,
             pcs,
             vcs_dist,
+            efficiency,
         }
     }
     /*
@@ -40,18 +42,36 @@ impl FER_calculator {
         map
     }
 
+    pub fn overalloc_dist_renormalized(&self) -> HashMap<u64, f64> {
+        let mut map: HashMap<u64, f64> = HashMap::new();
+        let mut total = 0.0;
+        self.vcs_dist.iter().for_each(|(vcs, prob)| {
+            let overalloc = *vcs as isize - self.pcs as isize;
+            if overalloc > 0 {
+                total += prob;
+                map.insert(overalloc as u64, *prob);
+            }
+        });
+        map.iter().map(|(vcs, prob)| (*vcs, *prob / total)).collect()
+    }
+
     fn vcsd_expectation(&self) -> f64 {
         self.vcs_dist.iter().fold(0.0, |acc, (vcs, prob)| acc + *vcs as f64 * *prob)
     }
 
     pub fn oa_expectation(&self) -> f64 {
-        self.overalloc_dist().iter().fold(0.0, |acc, (vcs, prob)| acc + *vcs as f64 * *prob)
+        self.overalloc_dist().iter().fold(0.0, |acc, (oa, prob)| acc + *oa as f64 * *prob)
     }
 
-    pub fn get_results(&self) -> (f64, f64, f64, u64) {
+    pub fn oa_expectation_renormalized(&self) -> f64 {
+        self.overalloc_dist_renormalized().iter().fold(0.0, |acc, (oa, prob)| acc + *oa as f64 * *prob)
+    }
+
+    pub fn get_results(&self) -> (f64, f64, f64, u64, f64) {
         let overage = self.oa_expectation();
         let unstored = self.unstored_per_access();
-        (overage, unstored, overage/unstored, self.pcs)
+        let overage_normalized = self.oa_expectation_renormalized();
+        (overage, unstored, overage/unstored, self.pcs, overage_normalized)
     }
 
 }

@@ -145,20 +145,27 @@ fn normalize_map(map: HashMap<u64, u64>) -> Vec<(u64, f64)> {
     map.iter().map(|(key, value)| (*key, *value as f64 / total as f64)).collect()
 }
 
-pub fn caching(ten_dist: Sampler, cache_size: u64, _delta: f64) -> (f64, f64, f64) {
+pub fn caching(ten_dist: Sampler, cache_size: u64, delta: f64) -> (f64, f64, f64) {
     let mut cache = Simulator::init();
     let mut trace_len: u64 = 0;
-    let samples_to_issue: u64 = 1024*1024*4;
-    let _prev_fer: Option<f64> = None;
+    let mut samples_to_issue: u64 = 1024*1024*32;
     let mut total_overalloc: u64 = 0;
-    let mut prev_output: Option<f64> = None;
-    let mut delta: Option<f64> = None;
-    while (delta.unwrap())
-    for _ in 0..samples_to_issue {
-        trace_len += 1;
-        let tenancy = ten_dist.sample();
-        cache.add_tenancy(tenancy, cache_size);
-        total_overalloc += cache.get_excess(cache_size);
+    let mut prev_fer: Option<f64> = None;
+    let mut diff: Option<f64> = None;
+    while (diff.unwrap_or(10000.0) > delta) {
+        for _ in 0..samples_to_issue {
+            trace_len += 1;
+            let tenancy = ten_dist.sample();
+            cache.add_tenancy(tenancy, cache_size);
+            total_overalloc += cache.get_excess(cache_size);
+        }
+        let current_fer = cache.force_evictions as f64/trace_len as f64;
+        diff = match prev_fer {
+            Some(prev) => Some((prev - current_fer).abs()),
+            None => None,
+        };
+        prev_fer = Some(current_fer);
+        samples_to_issue *= 2;
     }
 
     let overage = total_overalloc as f64/ trace_len as f64;
