@@ -1,8 +1,5 @@
-Install GSL on the local machine, e.g. brew install gsl on MacOS.
-
-Add the lib path, e.g. export LIBRARY_PATH=/opt/homebrew/lib
-
 Example use:
 
 	./build.sh
-There must be a lease.csv and ri.csv in the fer directory so that the program can convert leases and ri to a tenancy distribution
+Add more tests in the /polybench directory, there must be a file for leases that contains the word "lease" and the file for ri trace must end in .txt
+A tenancy distribution will be outputted for each polybench test in its corresponding directory.
