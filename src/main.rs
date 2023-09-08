@@ -28,7 +28,7 @@ fn main() {
     let model = FER_calculator::new(td.clone(), 1.0);
     let (model_overage, tenancy_remaining_per_access, model_fer, pcs, model_overage_normalized) = model.get_results();
     let model_unstored = (tenancy_remaining_per_access /pcs as f64)*(model_overage_normalized + pcs as f64);
-    // println!("model overage : {}", model_overage);
+    println!("model overage : {}", model_overage);
     // println!("model overage normalized : {}", model_overage_normalized);
     // println!("model tenancy remaining per access : {}", tenancy_remaining_per_access);
     // println!("model unstored : {}", model_unstored);
