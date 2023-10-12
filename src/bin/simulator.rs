@@ -152,7 +152,7 @@ pub fn caching(ten_dist: Sampler, cache_size: u64, delta: f64) -> (f64, f64, f64
     let mut total_overalloc: u64 = 0;
     let mut prev_fer: Option<f64> = None;
     let mut diff: Option<f64> = None;
-    while (diff.unwrap_or(10000.0) > delta) {
+    while diff.unwrap_or(10000.0) > delta {
         for _ in 0..samples_to_issue {
             trace_len += 1;
             let tenancy = ten_dist.sample();

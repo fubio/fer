@@ -10,4 +10,5 @@ GSL = "6.0"
 clap = { version = "4.3.12", features = ["derive"]} 
 csv = "1.2.2"
 rand = "0.8.5"
+nalgebra = "0.32.3"
 

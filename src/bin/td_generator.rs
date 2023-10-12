@@ -1,6 +1,5 @@
 use clap::Parser;
 use std::collections::HashMap;
-use std::cmp;
 use rand::Rng;
 
 #[derive(Parser, Debug)]

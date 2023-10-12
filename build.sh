@@ -3,7 +3,7 @@ LEASE_CSV="lease.csv"
 RI_CSV="ri.csv"
 TD_CSV="td.csv"
 export RUST_BACKTRACE=1
-export RUSTFLAGS="-Awarnings"
+#export RUSTFLAGS="-Awarnings"
 for dir in ./polybench/*/
 do
   dir=${dir%*/}

@@ -1,5 +1,4 @@
 use clap::Parser;
-mod util;
 mod bin;
 use bin::model::FER_calculator;
 use bin::simulator::caching;
@@ -13,6 +12,11 @@ struct Args {
 }
 
 fn main() {
+    let markovModel = markov::markov_model::new();
+    markovModel.set_num_states(2);
+    markovModel.set_transition_matrix(markov::Matrix2x2f::new(2, 2, 2, 3));
+    markovModel.transition(1);
+    println!("markov model multiplied: {}", markovModel.get_transition_probability_matrix());
     let parsed_args = Args::parse();
     let csv = parsed_args.td_csv;
     let mut reader = csv::Reader::from_path(csv.clone()).unwrap();
@@ -26,7 +30,7 @@ fn main() {
     }).collect();
 
     let model = FER_calculator::new(td.clone(), 1.0);
-    let (model_overage, tenancy_remaining_per_access, model_fer, pcs, model_overage_normalized) = model.get_results();
+    let (model_overage, tenancy_remaining_per_access, model_fer, pcs, model_overage_normalized, efficiency) = model.get_results();
     let model_unstored = (tenancy_remaining_per_access /pcs as f64)*(model_overage_normalized + pcs as f64);
     println!("model overage : {}", model_overage);
     // println!("model overage normalized : {}", model_overage_normalized);
@@ -40,4 +44,5 @@ fn main() {
     // println!("simulated unstored : {}", simulated_unstored);
     println!("lower bound simulated fer: {}", simulated_overage/simulated_unstored);
     println!("simulated fer : {}", simulated_fer);
+    println!("efficiency : {}", efficiency);
 }
