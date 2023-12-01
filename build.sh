@@ -3,7 +3,8 @@ LEASE_CSV="lease.csv"
 RI_CSV="ri.csv"
 TD_CSV="td.csv"
 export RUST_BACKTRACE=1
-#export RUSTFLAGS="-Awarnings"
+export RUSTFLAGS="-Awarnings"
+export RUST_BACKTRACE=full
 for dir in ./polybench/*/
 do
   dir=${dir%*/}
@@ -13,7 +14,7 @@ do
 #  echo "TD CSV: $TD_CSV"
     for file in ./polybench/$dir/*
     do
-      if [[ $file == *"lease"* ]]
+      if [[ $file == *"lease"* ] && $file != *"3mm"* ]
       then
         LEASE_CSV=$file
       fi

@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::collections::HashMap;
-use rand::Rng;
+// use rand::Rng;
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -28,7 +28,7 @@ fn lease_to_map(file_path_str: String) -> HashMap<u64, (u64, u64, f64)> {
         let long_lease = u64::from_str_radix(record[3].trim(), 16).unwrap();
         // println!("short_lease: {}, long_lease: {}", short_lease, long_lease);
         let short_lease_prob = record[4].trim().parse::<f64>().unwrap();
-        let random_number = rand::thread_rng().gen_range(0.0..1.0);
+        // let random_number = rand::thread_rng().gen_range(0.0..1.0);
         // let lease = if random_number < short_lease_prob {short_lease} else {long_lease};
         map.insert(reference, (short_lease, long_lease, short_lease_prob));
     });
@@ -52,7 +52,7 @@ fn convert_to_td(reference_ri_vec: Vec<(u64, i64)>, reference_lease_map: HashMap
     reference_ri_vec.iter().for_each(|(reference, ri)| {
         // println!("reference: {}, ri: {}, lease: {}", reference, ri, lease);
         let leases_tuple = reference_lease_map.get(reference).unwrap();
-        let mut short_lease = &leases_tuple.0;
+        let short_lease = &leases_tuple.0;
         let long_lease = &leases_tuple.1;
         let short_lease_prob = &leases_tuple.2;
         if *ri == 4294967295 {

@@ -1,19 +1,21 @@
 use std::collections::HashMap;
 use crate::util::vcsd;
 use crate::util::markov;
+use crate::util::markov::markov_model;
 
-pub struct FER_calculator {
+pub struct FERCalculator {
     td: Vec<(u64, f64)>,
     //this is just the expectation of the tenancy distribution
     pcs: u64,
     vcs_dist: HashMap<u64, f64>,
 }
 
-impl FER_calculator {
-    pub fn new(td: Vec<(u64, f64)>, efficiency: f64) -> FER_calculator {
+impl FERCalculator {
+    pub fn new(td: Vec<(u64, f64)>, efficiency: f64) -> FERCalculator {
         let pcs = tenancy_expectation(&td);
-        let vcs_dist = vcsd::generate_vcsd(td.iter().map(|(tenacy, prob)| (*tenacy, *prob)).collect::<HashMap<_, _>>());
-        FER_calculator {
+        let td_map = td.iter().map(|(tenacy, prob)| (*tenacy, *prob)).collect::<HashMap<_, _>>();
+        let vcs_dist = vcsd::generate_vcsd(td_map);
+        FERCalculator {
             td,
             pcs,
             vcs_dist,
@@ -31,7 +33,7 @@ impl FER_calculator {
     }
 
     pub fn tenancy_remaining_given_fe(&self) -> f64 {
-        (self.unstored_per_access()/self.pcs as f64) * (self.pcs as f64 + self.oa_expectation())
+        self.unstored_per_access()/self.pcs as f64 * (self.pcs as f64 + self.oa_expectation())
     }
 
     pub fn print_oa_dist(&self) {
@@ -86,28 +88,28 @@ impl FER_calculator {
 
     pub fn efficiency(&self) -> f64 {
         //probability of being underallocated
-        let p_ua = self.vcs_dist.iter().fold(0.0, |acc, (vcs, prob)| acc + if *vcs <= self.pcs {prob} else {&0.0});
+        let p_ua = self.vcs_dist.iter()
+            .fold(0.0, |acc, (vcs, prob)| acc + if *vcs <= self.pcs {prob} else {&0.0});
         //p(oa) = 1-p(ua)
         let p_oa = 1.0 - p_ua;
-        //this is P(VCS=PCS)*mult_{i=1}^n (1-pi)
-        let p_oa_given_ua = self.vcs_dist.get(&self.pcs).unwrap_or(&0.0) * self.td.iter().fold(1.0, |acc, (tenancy, prob)| acc * (1.0 - *prob));
-        //apply bayes rile to the previous
+        //this is P(VCS=PCS)*mult_{i=1}^n (1-p_i)
+        let p_oa_given_ua = self.vcs_dist.get(&self.pcs)
+            .unwrap_or(&0.0) * self.td.iter()
+                .fold(1.0, |acc, (tenancy, prob)| acc * (1.0 - *prob));
+        //apply bayes rule to the previous
         let p_ua_given_oa = p_oa_given_ua * p_ua / p_oa;
         //p(ua|ua) = 1 - p(oa|ua)
         let p_ua_given_ua = 1.0 - p_oa_given_ua;
         //p(oa|oa) = 1 - p(ua|oa)
         let p_oa_given_oa = 1.0-p_ua_given_oa;
-        let transition_mat = markov::new(p_ua_given_ua, p_oa_given_ua, p_ua_given_oa, p_oa_given_oa);
-        // let efficiency = 1..(self.unstored_per_access() as u64).for_each( |i| 
-        //     efficiency += (transition_mat.get_transition_probability(1, 1));
-        //     transition_mat = transition_mat.trasnsition(1);
-        // );
-        let efficiency = 0.0;
-        (1..(self.unstored_per_access() as i32)).for_each(|i| {
-            efficiency += transition_mat.get_transition_probability(1, 1);
-            transition_mat.trasnsition(1);
+        let markov_model = markov_model
+            ::new(p_ua_given_ua, p_oa_given_ua, p_ua_given_oa, p_oa_given_oa);
+        let mut total_visits_to_oa = 1.0;
+        //WE ARE FLOORING TENANCY REAMINGING GIVEN FE COULD BE A SOURCE OF ERROR
+        (1..self.tenancy_remaining_given_fe() as i64).for_each(|i| {
+            total_visits_to_oa += markov_model.transition(i)[(1,1)];
         });
-        efficiency
+        total_visits_to_oa/self.tenancy_remaining_given_fe()
     }
 
     pub fn get_results(&self) -> (f64, f64, f64, u64, f64, f64) {

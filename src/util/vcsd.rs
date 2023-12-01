@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io;
-use rgsl::randist::binomial::binomial_pdf;
+use std::cmp;
+use rgsl::randist::binomial::{binomial_pdf, self};
 
 /*
  * This is the the example of how to use the program
@@ -13,6 +14,14 @@ use rgsl::randist::binomial::binomial_pdf;
 // }
 
 
+fn check_nan<I : Iterator<Item = f64>>(mut iter : I) {
+    for i in iter {
+        if i.is_nan() {
+            panic!("nan detected");
+        }
+    }
+}
+
 fn input_to_hashmap() -> HashMap<u64, f64> {//read input name and convert to Hashmap
     let mut rdr = csv::ReaderBuilder::new()
         .from_reader(io::stdin());
@@ -24,6 +33,14 @@ fn input_to_hashmap() -> HashMap<u64, f64> {//read input name and convert to Has
     return _result;
 }
 
+macro_rules! panic_on_nan {
+    ($v:expr, $($arg:tt)*) => {
+        if $v.is_nan() {
+            panic!($($arg)*);
+        }
+    };
+}
+
 
 //this is the convolution with hashmap
 fn convolute(x: &HashMap<u64, f64>, y:HashMap<u64, f64>) -> HashMap<u64, f64>{
@@ -31,8 +48,14 @@ fn convolute(x: &HashMap<u64, f64>, y:HashMap<u64, f64>) -> HashMap<u64, f64>{
     for (key_x, val_x) in x.iter(){
         for (key_y, val_y)  in y.iter(){
             match result.get(&(key_x + key_y)){
-                Some(a) => result.insert(key_x + key_y, a + (val_x * val_y)),
-                None => result.insert(key_x + key_y, val_x * val_y),
+                Some(a) => {
+                    panic_on_nan!(a + (val_x * val_y), "{a} + ({val_x} * {val_y}) is nan");
+                    result.insert(key_x + key_y, a + (val_x * val_y))
+                },
+                None => { 
+                    panic_on_nan!(val_x * val_y, "{val_x} * {val_y} is nan");
+                    result.insert(key_x + key_y, val_x * val_y)
+                }
             };
         }
     }
@@ -63,9 +86,10 @@ pub fn generate_vcsd(input:HashMap<u64, f64>) -> HashMap<u64, f64> {
             continue;
         }
         let temp = pack_to_binomial(**keys.get(curr_front).unwrap() - **keys.get(curr_front - 1).unwrap(), proba);
-
+        check_nan(temp.values().copied());
         z = convolute(&mut z, temp);
         curr_front += 1;
+        check_nan(z.values().copied());
     }
     return z;
 }
@@ -83,10 +107,16 @@ fn write(output:&HashMap<u64, f64>){
 
 
 //the same packing method, but return a hashmap
-fn pack_to_binomial(times:u64, proba:f64) -> HashMap<u64, f64>{
+fn pack_to_binomial(times:u64, mut proba:f64) -> HashMap<u64, f64>{
     let mut curr = 0;
     let mut v =HashMap::new();
     while curr <= times {
+        proba = if proba > 1.0 {1.0} else {proba};
+        let result = binomial_pdf(curr as u32, proba, times as u32);
+        if (result.is_nan()){
+            println!("{curr} {proba} {times}");
+            panic!("binomial_pdf is nan");
+        }
         v.insert(curr,binomial_pdf(curr as u32, proba, times as u32)) ;
         curr += 1;
     }

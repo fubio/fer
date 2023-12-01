@@ -12,3 +12,6 @@ csv = "1.2.2"
 rand = "0.8.5"
 nalgebra = "0.32.3"
 
+
+[profile.release]
+debug = true
