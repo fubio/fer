@@ -14,7 +14,7 @@ do
 #  echo "TD CSV: $TD_CSV"
     for file in ./polybench/$dir/*
     do
-      if [[ $file == *"lease"* ] && $file != *"3mm"* ]
+      if [[ $file == *"lease"* ]]
       then
         LEASE_CSV=$file
       fi

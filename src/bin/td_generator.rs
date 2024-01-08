@@ -19,6 +19,7 @@ struct Args {
 
 
 fn lease_to_map(file_path_str: String) -> HashMap<u64, (u64, u64, f64)> {
+    //map: reference -> (short_lease, long_lease, short_lease_prob)
     let mut map = HashMap::new();
     let mut reader = csv::ReaderBuilder::new().has_headers(false).from_path(file_path_str).unwrap();
     reader.records().for_each(|result| {
@@ -55,7 +56,8 @@ fn convert_to_td(reference_ri_vec: Vec<(u64, i64)>, reference_lease_map: HashMap
         let short_lease = &leases_tuple.0;
         let long_lease = &leases_tuple.1;
         let short_lease_prob = &leases_tuple.2;
-        if *ri == 4294967295 {
+        //if ri = 4294967295 = 0xffffffff
+        if *ri == 0xffffffff {
             let tenancy = (short_lease.clone() as f64 * short_lease_prob + long_lease.clone() as f64 * (1.0-short_lease_prob)).round() as u64;
             td.insert(tenancy, td.get(&tenancy).unwrap_or(&0) + 1);
         } else if (ri.clone() as u64) <= *short_lease {
