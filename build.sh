@@ -4,6 +4,7 @@ RI_CSV="ri.csv"
 TD_CSV="td.csv"
 export RUST_BACKTRACE=1
 export RUSTFLAGS="-Awarnings"
+export RUST_BACKTRACE=full
 for dir in ./polybench/*/
 do
   dir=${dir%*/}
